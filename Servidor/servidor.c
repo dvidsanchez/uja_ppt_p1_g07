@@ -11,7 +11,7 @@ Descripción:
 	Servidor de eco sencillo TCP.
 
 Autor: Juan Carlos Cuevas Martínez
-
+Modificado por: Antonio Perez Pozuelo y David Sanchez Fernandez
 *******************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -34,7 +34,8 @@ main()
 	int err,tamanio;
 	int fin=0, fin_conexion=0;
 	int recibidos=0,enviados=0;
-	int estado=0;
+	int estado=0,i;
+	char num1[4],num2[4],cad[20];
 
 	/** INICIALIZACION DE BIBLIOTECA WINSOCK2 **
 	 ** OJO!: SOLO WINDOWS                    **/
@@ -94,6 +95,11 @@ main()
  
 		if(enviados==SOCKET_ERROR){
 			printf("SERVIDOR> Error enviando datos");
+			continue;
+		}else if (enviados==0)
+		{
+			printf("SERVIDOR> Se ha liberado la conexion de forma acordada");
+			continue;
 		}
 
 		//Se reestablece el estado inicial
@@ -110,7 +116,14 @@ main()
 			
 			if(recibidos==SOCKET_ERROR){
 				printf ("SERVIDOR> Error recibiendo datos");
-			}
+				fin_conexion=1;
+					continue;
+			}else if (recibidos==0)
+			{
+				printf("SERVIDOR> Se ha liberado la conexion de forma acordada");
+			fin_conexion=1;
+			continue;
+				}
 
 			
 			buffer_in[recibidos] = 0x00;
@@ -183,10 +196,30 @@ main()
 					buffer_in[recibidos] = 0x00;
 					
 					strncpy_s(cmd,sizeof(cmd), buffer_in, 4);
-
+					cmd[4]=0x00;
 					printf ("SERVIDOR> [Comando]>%s\r\n",cmd);
+					if (strcmp(cmd,SU)==0)
+					{
+						strncpy_s(cad,sizeof(cad), buffer_in, 14);
+						cad[14]=0x00;
+						for (i = 5; i < 9; i++)
+						{
+							num1[i-5]=cad[i];
+						}
+						for (i = 10 ; i < 14; i++)
+						{
+							num2[i-10]=cad[i];
+						}
+						if (atoi(num1)+atoi(num2)>0)
+						{
+							sprintf_s (buffer_out, sizeof(buffer_out), "%s %d%s", OK,atoi(num1)+atoi(num2),CRLF);
+						}else
+						{
+							sprintf_s (buffer_out, sizeof(buffer_out), "%s Ha habido un error de comando%s", ER,CRLF);
+						}
+					}
 					
-					if ( strcmp(cmd,SD)==0 )
+					else if ( strcmp(cmd,SD)==0 )
 					{
 						sprintf_s (buffer_out, sizeof(buffer_out), "%s Fin de la conexión%s", OK,CRLF);
 						fin_conexion=1;
@@ -212,10 +245,17 @@ main()
 			//TODO 
 				if (enviados==SOCKET_ERROR)
 					{
-						printf("CLIENTE> Error enviando datos\r\n");
-					}else
+						printf("SERVIDOR> Error enviando datos\r\n");
+						fin_conexion=1;
+				}else if (enviados==0)
+				{
+					printf("SERVIDOR> Se ha liberado la conexion de forma acordada");
+					fin_conexion=1;
+				}
+				
+				else
 					{
-						printf("CLIENTE> Se han enviado los datos: %s",buffer_out);
+						printf("SERVIDOR> Se han enviado los datos: %s",buffer_out);
 					}
 
 		} while (!fin_conexion);

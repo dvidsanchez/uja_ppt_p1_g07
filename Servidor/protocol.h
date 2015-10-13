@@ -30,3 +30,6 @@
 // NOMBRE Y PASSWORD AUTORIZADOS
 #define USER		"alumno"
 #define PASSWORD	"123456"
+
+//COMANDO SUMA
+#define SU "SUMA"

@@ -11,7 +11,7 @@ Descripción:
 	Cliente de eco sencillo TCP.
 
 Autor: Juan Carlos Cuevas Martínez
-
+Modificado por: Antonio Perez Pozuelo y David Sanchez Fernandez
 *******************************************************/
 #include <stdio.h>
 #include <winsock.h>
@@ -117,12 +117,18 @@ int main(int *argc, char *argv[])
 							sprintf_s (buffer_out, sizeof(buffer_out), "%s %s%s",PW,input,CRLF);
 						break;
 					case S_DATA:
-						printf("CLIENTE> Introduzca datos (enter o QUIT para salir): ");
+						printf("CLIENTE> Introduzca el comando adecuado (1-Para sumar,enter o QUIT para salir): ");
 						gets(input);
-						if(strlen(input)==0)
+						if(strlen(input)==0||strcmp(input,SD)==0)
 						{
 							sprintf_s (buffer_out, sizeof(buffer_out), "%s%s",SD,CRLF);
 							estado=S_QUIT;
+						}
+						else if (strlen(input)==1)
+						{
+							printf("CLIENTE> Introduzca los numeros a sumar, formato(XXXX XXXX): ");
+						gets(input);
+						sprintf_s (buffer_out, sizeof(buffer_out), "%s %s%s",SU,input,CRLF);
 						}
 						else
 							sprintf_s (buffer_out, sizeof(buffer_out), "%s%s",input,CRLF);
@@ -137,17 +143,20 @@ int main(int *argc, char *argv[])
 					if (enviados==SOCKET_ERROR)
 					{
 						printf("CLIENTE> Error enviando datos\r\n");
-					}else
+						estado=S_QUIT;
+					}else if (enviados==0)
+					{
+						printf("CLIENTE> Se ha liberado la conexion de forma acordada");
+						estado=S_QUIT;
+					}
+					else
 					{
 						printf("CLIENTE> Se han enviado los datos: %s",buffer_out);
 					}
 					}
 					//Recibo
 					recibidos=recv(sockfd,buffer_in,512,0);
-					if (estado==S_PASS && strncmp(buffer_in,OK,2)!=0)
-					{
-						estado=S_USER;
-					}
+					
 					if(recibidos<=0)
 					{
 						DWORD error=GetLastError();
@@ -163,14 +172,22 @@ int main(int *argc, char *argv[])
 						
 					
 						}
-					}else
+					}
+					else if (estado==S_PASS && strncmp(buffer_in,OK,2)!=0)
+					{
+						
+					
+						estado=S_USER;
+					
+					}
+					else
 					{
 						buffer_in[recibidos]=0x00;
 						printf(buffer_in);
 						if(estado!=S_DATA && strncmp(buffer_in,OK,2)==0) 
 							estado++;  
 					}
-
+					
 				}while(estado!=S_QUIT);
 				
 	
@@ -183,9 +200,13 @@ int main(int *argc, char *argv[])
 			// fin de la conexion de transporte
 			closesocket(sockfd);
 			
-		}	
-		printf("-----------------------\r\n\r\nCLIENTE> Volver a conectar (S/N)\r\n");
+		}
+		do
+		{
+			printf("-----------------------\r\n\r\nCLIENTE> Volver a conectar (S/N)\r\n");
 		option=_getche();
+		} while (option!='n'&&option!='N'&&option!='s'&&option!='S');
+		
 
 	}while(option!='n' && option!='N');
 
